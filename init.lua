@@ -7,7 +7,7 @@ local tinsert, tremove, tconcat, tsort =
   table.insert, table.remove, table.concat, table.sort
 
 
----@alias Neopm fun(uri: NeopmPlug): fun(opts: NeopmPlugOpts)
+---@alias Neopm fun(uri: string): fun(opts: NeopmPlugOpts)
 
 ---@class NeopmPlug
 ---@field uri string              Plugin URI
