@@ -47,7 +47,7 @@ local tinsert, tremove, tconcat, tsort =
 
 --- Default options
 local DEFAULT_OPTIONS = {
-  install_dir = fn.stdpath('data')..'/nplugged', -- TODO: change default install directory
+  install_dir = fn.stdpath('data')..'/neopm',
   patch_dir   = fn.stdpath('config')..'/patches',
   git_command = 'git',
 }

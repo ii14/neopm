@@ -50,12 +50,6 @@ git clone https://github.com/ii14/neopm.nvim ~/.config/nvim/lua/plug
 -- will change in a near future.
 Plug = require('plug')
 
--- set install directory, optional. I'm doing this just
--- for testing, to not potentially mess up my existing
--- plugin installations. the default directory will
--- change in the future.
-Plug.install_dir = vim.fn.stdpath('data')..'/nplugged'
-
 -- Editing --
 Plug 'ii14/vim-surround'
 Plug 'numToStr/Comment.nvim'
