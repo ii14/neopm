@@ -11,7 +11,7 @@ local ENTRIES_SIZE = 64 -- entries per callback when scanning a directory
 -- INTERNAL STATE --
 
 --- Lookup table of coroutine to Task
----@type table<thread,Task>
+---@type table<thread,NeopmTask>
 local tasks = {}
 --- Active tasks
 local active = 0
@@ -38,7 +38,7 @@ end
 
 -- TASK API --
 
----@class Task
+---@class NeopmTask
 ---@field coro thread             Coroutine
 ---@field cb? fun(err?: string)   Called when task finishes
 ---@field data? any               User assignable data
@@ -69,7 +69,7 @@ end
 --- Creates a new task
 ---@param func function         Task function
 ---@param cb fun(err?: string)  Called when task finishes
----@return Task
+---@return NeopmTask
 function Task.new(func, cb)
   assert(type(func) == 'function')
   assert(cb == nil or type(cb) == 'function')
@@ -94,7 +94,7 @@ end
 
 --- Gets current task
 --- Throws when called outside of a running task
----@return Task
+---@return NeopmTask
 function Task.current()
   return assert(tasks[assert(crunning())])
 end
@@ -199,7 +199,7 @@ local function new_pipe(cb, capture)
   return pipe, callback, output
 end
 
----@class TaskExecOpts
+---@class NeopmTaskExecOpts
 ---@field cwd? string
 ---@field env? table<string,string>
 ---@field capture_stdout? boolean
@@ -207,7 +207,7 @@ end
 ---@field on_stdout? fun(data: string)
 ---@field on_stderr? fun(data: string)
 
----@class TaskExecResults
+---@class NeopmTaskExecResults
 ---@field signal number
 ---@field stdout string[]
 ---@field stderr string[]
@@ -215,9 +215,9 @@ end
 --- Spawns a subprocess
 ---@param path string         Executable
 ---@param args string[]       Arguments
----@param opts? TaskExecOpts  Options
+---@param opts? NeopmTaskExecOpts  Options
 ---@return number status
----@return TaskExecResults results
+---@return NeopmTaskExecResults results
 function Task:exec(path, args, opts)
   opts = opts or {}
 

@@ -5,6 +5,7 @@ local Task = require('plug.task')
 local Git = require('plug.git')
 local UpdateView = require('plug.updateview')
 
+---@type NeopmState
 local state = require('plug')._state
 
 local Impl = {}
@@ -40,8 +41,8 @@ local function get_patches()
 end
 
 --- Install plugin task
----@param plug Plugin
----@param buf UpdateView
+---@param plug NeopmPlug
+---@param buf NeopmUpdateView
 ---@return nil|string err
 local function task_install(plug, buf)
   buf:set(plug, 'clone...')
@@ -55,8 +56,8 @@ local function task_install(plug, buf)
 end
 
 --- Update plugin task
----@param plug Plugin
----@param buf UpdateView
+---@param plug NeopmPlug
+---@param buf NeopmUpdateView
 ---@return nil|string err
 local function task_update(plug, buf)
   local err = Git.patch_revert(plug)

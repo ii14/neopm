@@ -7,13 +7,9 @@ local tinsert, tremove, tconcat, tsort =
   table.insert, table.remove, table.concat, table.sort
 
 
----@class PlugBase
+---@alias Neopm fun(uri: NeopmPlug): fun(opts: NeopmPlugOpts)
 
----@alias PlugNew fun(uri: Plugin): fun(opts: PluginOpts)
-
----@alias Plug PlugBase|PlugNew
-
----@class Plugin
+---@class NeopmPlug
 ---@field uri string              Plugin URI
 ---@field path? string            Full path to plugin (updated by prepare())
 ---@field ext? boolean            True if external, unmanaged plugin
@@ -28,7 +24,7 @@ local tinsert, tremove, tconcat, tsort =
 ---@field loaded? boolean         true if plugin was loaded
 ---@field patch? string           Path to patch (updated by plug.impl.get_patches())
 
----@class PluginOpts
+---@class NeopmPlugOpts
 ---@field as? string                Directory name
 ---@field on? string|string[]       Load on command(s)
 ---@field ft? string|string[]       Load on filetype(s)
@@ -36,7 +32,7 @@ local tinsert, tremove, tconcat, tsort =
 ---@field setup? string|function    Post load hook
 ---@field depends? string|string[]  Plugin dependencies
 
----@class PlugStats
+---@class NeopmStats
 ---@field total number        Total plugin count
 ---@field external number     External plugin count
 ---@field installed number    Installed plugin count
@@ -57,16 +53,16 @@ local DEFAULT_OPTIONS = {
 }
 
 --- Global state
----@class PlugState
+---@class NeopmState
 local state = {
   --- Plugin lookup by definition order
-  ---@type Plugin[]
+  ---@type NeopmPlug[]
   by_order = {},
   --- Plugin lookup by URI
-  ---@type Plugin[]
+  ---@type NeopmPlug[]
   by_uri = {},
   --- Plugin lookup by "as" property, updated by prepare()
-  ---@type Plugin[]?
+  ---@type NeopmPlug[]?
   by_dir = {},
 
   --- Option: Path to installation directory, updated by prepare()
@@ -81,13 +77,13 @@ local state = {
 }
 
 --- Plugins loaded on filetype
----@type table<string,Plugin[]>
+---@type table<string,NeopmPlug[]>
 local lazy_fts = {}
 --- Plugins loaded on command
----@type table<string,Plugin[]>
+---@type table<string,NeopmPlug[]>
 local lazy_cmds = {}
 --- Plugins loaded on key mapping
----@type table<string,Plugin[]>
+---@type table<string,NeopmPlug[]>
 -- local lazy_maps = {}
 
 --- Changed state flag, for prepare()
@@ -95,8 +91,8 @@ local changed = false
 
 local HOME = vim.env.HOME
 
----@type Plug
-local Plug = {
+---@type Neopm
+local Neopm = {
   --- Path to installation directory
   ---@type string
   install_dir = DEFAULT_OPTIONS.install_dir,
@@ -108,6 +104,7 @@ local Plug = {
   git_command = DEFAULT_OPTIONS.git_command,
 
   --- Internal state
+  ---@type NeopmState
   _state = state,
 }
 
@@ -189,7 +186,7 @@ local VALIDATE_OPTS = {
 --- New plugin
 ---@param uri string        Plugin URI
 ---@param idx number        Insert plugin at index
----@return Plugin plugin    Plugin
+---@return NeopmPlug plugin Plugin
 ---@return boolean cached   true if plugin already existed
 local function newplugin(uri, idx)
   local plug = state.by_uri[uri]
@@ -221,8 +218,8 @@ local function newplugin(uri, idx)
 end
 
 --- Set options for a plugin
----@param plug Plugin     Plugin instance
----@param opts PluginOpts Options table
+---@param plug NeopmPlug     Plugin instance
+---@param opts NeopmPlugOpts Options table
 local function setopts(plug, opts)
   changed = true
   for k, v in pairs(opts) do
@@ -259,7 +256,7 @@ end
 
 --- Add plugin
 ---@param uri string Plugin URI
----@return fun(opts: PluginOpts)
+---@return fun(opts: NeopmPlugOpts)
 local function addplugin(_, uri)
   local plug = newplugin(uri)
   return function(opts)
@@ -272,7 +269,7 @@ end
 local function prepare()
   -- update options
   for k, default in pairs(DEFAULT_OPTIONS) do
-    local v = Plug[k]
+    local v = Neopm[k]
     if v == nil then
       state[k] = default
     elseif type(v) == 'string' then
@@ -311,7 +308,7 @@ local function prepare()
 end
 
 --- Update runtimepath
----@return Plugin[] setup_plugs
+---@return NeopmPlug[] setup_plugs
 local function update_rtp()
   local setup_plugs = {}
   local paths = {}
@@ -419,7 +416,7 @@ end
 
 --- Lazy load plugins for filetype
 ---@param ft string
-function Plug._load_ft(ft)
+function Neopm._load_ft(ft)
   -- get lazy plugins for this filetype
   local plugs = lazy_fts[ft]
   if not plugs then return end
@@ -510,7 +507,7 @@ end
 ---@param line1 number
 ---@param line2 number
 ---@param args string
-function Plug._load_cmd(cmd, bang, range, line1, line2, args)
+function Neopm._load_cmd(cmd, bang, range, line1, line2, args)
   -- get lazy plugins for this command
   local plugs = lazy_cmds[cmd]
   if not plugs then return end
@@ -581,7 +578,7 @@ end
 
 
 --- Load plugins
-function Plug.load()
+function Neopm.load()
   prepare()
 
   vcmd([[
@@ -673,21 +670,21 @@ end
 
 
 --- Install plugins
-function Plug.install()
+function Neopm.install()
   prepare()
   return require('plug.impl').install()
 end
 
 --- Update plugins
-function Plug.update()
+function Neopm.update()
   prepare()
   return require('plug.impl').update()
 end
 
 
 --- Get plugin statistics
----@return PlugStats
-function Plug.stats()
+---@return NeopmStats
+function Neopm.stats()
   prepare()
   local total     = 0
   local managed   = 0
@@ -730,8 +727,8 @@ end
 
 --- Check and install missing plugins
 ---@param prompt? boolean   Ask for permission, off by default
-function Plug.autoinstall(prompt)
-  local missing = Plug.stats().uninstalled
+function Neopm.autoinstall(prompt)
+  local missing = Neopm.stats().uninstalled
   if missing <= 0 then return end
 
   if prompt then
@@ -743,9 +740,9 @@ function Plug.autoinstall(prompt)
     end
   end
 
-  Plug.install()
+  Neopm.install()
 end
 
 
-setmetatable(Plug, { __call = addplugin })
-return Plug
+setmetatable(Neopm, { __call = addplugin })
+return Neopm

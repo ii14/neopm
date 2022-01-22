@@ -3,6 +3,7 @@ local uv = vim.loop
 local tinsert = table.insert
 local Task = require('plug.task')
 
+---@type NeopmState
 local state = require('plug')._state
 
 local Git = {}
@@ -58,7 +59,7 @@ end
 ---@param on_update? fun(data: string)
 ---@param capture_stdout? boolean
 ---@return number status
----@return TaskExecResults results
+---@return NeopmTaskExecResults results
 function Git.run(args, cwd, on_update, capture_stdout)
   local opts = {
     cwd = cwd or state.install_dir,
@@ -80,7 +81,7 @@ function Git.run(args, cwd, on_update, capture_stdout)
 end
 
 --- git clone, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 ---@param on_progress fun(data: string)
 ---@return number status
 function Git.clone(plug, on_progress)
@@ -100,7 +101,7 @@ function Git.clone(plug, on_progress)
 end
 
 --- git fetch, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 ---@param on_progress fun(data: string)
 ---@return number status
 function Git.fetch(plug, on_progress)
@@ -118,7 +119,7 @@ function Git.fetch(plug, on_progress)
 end
 
 --- git checkout, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 ---@param branch string
 ---@return number status
 function Git.checkout(plug, branch)
@@ -127,7 +128,7 @@ function Git.checkout(plug, branch)
 end
 
 --- git merge, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 ---@param branch string
 ---@return number status
 function Git.merge(plug, branch)
@@ -136,7 +137,7 @@ function Git.merge(plug, branch)
 end
 
 --- git patch, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 ---@return string? err
 function Git.patch(plug)
   -- TODO: revert previous patch if necessary
@@ -153,7 +154,7 @@ function Git.patch(plug)
 end
 
 --- git patch -R, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 ---@return string? err
 function Git.patch_revert(plug)
   local task = Task.current()
@@ -171,7 +172,7 @@ function Git.patch_revert(plug)
 end
 
 --- git log, asynchronous
----@param plug Plugin
+---@param plug NeopmPlug
 function Git.log(plug, rev)
   local status, results = Git.run({
     'log',
@@ -239,7 +240,7 @@ function Git.origin_branch(dir)
 end
 
 --- Check if patch exists, synchronous (unused)
----@param plug Plugin
+---@param plug NeopmPlug
 ---@return boolean
 function Git.is_patched(plug)
   local patch = plug.path..'/.git/plug.diff'

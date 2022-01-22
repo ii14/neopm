@@ -5,9 +5,10 @@ local tinsert = table.insert
 local UPDATE_INTERVAL = 50 -- minimum time in ms to flush changes
 local COLUMN_WIDTH    = 50 -- plugin uri column width
 
+---@type NeopmState
 local state = require('plug')._state
 
----@class UpdateView
+---@class NeopmUpdateView
 ---@field bufnr number
 ---@field lines string[]
 ---@field last_update number
@@ -16,7 +17,7 @@ local UpdateView = {}
 UpdateView.__index = UpdateView
 
 --- Create a new update view
----@return UpdateView
+---@return NeopmUpdateView
 function UpdateView.new()
   vim.cmd([[
     enew
@@ -55,7 +56,7 @@ function UpdateView.new()
 end
 
 --- Set plugin status string
----@param plug Plugin
+---@param plug NeopmPlug
 ---@param status string
 function UpdateView:set(plug, status)
   self.lines[plug.order] = plug.uri..string.rep(' ', COLUMN_WIDTH - #plug.uri)..status
