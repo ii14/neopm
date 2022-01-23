@@ -233,6 +233,14 @@ function Task:exec(path, args, opts)
     env = opts.env,
     stdio = { nil, stdout_pipe, stderr_pipe },
   }, function(status, signal)
+    handle:close()
+    if stdout_pipe then
+      stdout_pipe:close()
+    end
+    if stderr_pipe then
+      stderr_pipe:close()
+    end
+
     -- remove from active jobs
     for i, v in ipairs(jobs) do
       if handle == v then
@@ -240,7 +248,6 @@ function Task:exec(path, args, opts)
         break
       end
     end
-    handle:close()
 
     -- split output to lines
     if stdout_output then
@@ -259,6 +266,12 @@ function Task:exec(path, args, opts)
   end)
 
   if not handle then
+    if stdout_pipe then
+      stdout_pipe:close()
+    end
+    if stderr_pipe then
+      stderr_pipe:close()
+    end
     error('failed to spawn process: '..path..' '..tconcat(args, ' '))
   end
 
