@@ -31,13 +31,18 @@ function UpdateView.new()
   local ok, err = pcall(api.nvim_buf_set_name, bufnr, '[plug]')
   if not ok then
     if err:match('^Vim:E95:') then
+      local created = false
       for i = 2, 99 do -- to not go forever if something goes wrong I guess
         ok, err = pcall(api.nvim_buf_set_name, bufnr, '[plug('..i..')]')
         if ok then
+          created = true
           break
         elseif not err:match('^Vim:E95:') then
           error(err)
         end
+      end
+      if not created then
+        error('failed to create a new buffer')
       end
     else
       error(err)
