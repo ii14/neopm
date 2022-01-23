@@ -29,11 +29,18 @@ function UpdateView.new()
 
   -- TODO: reuse previous buffer
   local ok, err = pcall(api.nvim_buf_set_name, bufnr, '[plug]')
-  if not ok and err:match('^Vim:E95:') then
-    for i = 2, 99 do -- to not go forever if something goes wrong I guess
-      if pcall(api.nvim_buf_set_name, bufnr, '[plug('..i..')]') then
-        break
+  if not ok then
+    if err:match('^Vim:E95:') then
+      for i = 2, 99 do -- to not go forever if something goes wrong I guess
+        ok, err = pcall(api.nvim_buf_set_name, bufnr, '[plug('..i..')]')
+        if ok then
+          break
+        elseif not err:match('^Vim:E95:') then
+          error(err)
+        end
       end
+    else
+      error(err)
     end
   end
 
