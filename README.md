@@ -50,6 +50,13 @@ git clone https://github.com/ii14/neopm.nvim ~/.config/nvim/lua/plug
 -- will change in a near future.
 Plug = require('plug')
 
+-- default config:
+-- Plug.config {
+--   install_dir = vim.fn.stdpath('data')..'/neopm',
+--   patch_dir   = vim.fn.stdpath('config')..'/patches',
+--   git_command = 'git',
+-- }
+
 -- Editing --
 Plug 'ii14/vim-surround'
 Plug 'numToStr/Comment.nvim'
@@ -140,7 +147,7 @@ to the `~/.config/nvim/patches` directory:
 
 ```
 mkdir -p ~/.config/nvim/patches
-cd ~/.local/share/nvim/nplugged/some-vim-plugin
+cd ~/.local/share/nvim/neopm/some-vim-plugin
 # make some edits
 git diff > ~/.config/nvim/patches/some-vim-plugin.diff
 ```

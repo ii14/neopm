@@ -32,6 +32,11 @@ local tinsert, tremove, tconcat, tsort =
 ---@field setup? string|function    Post load hook
 ---@field depends? string|string[]  Plugin dependencies
 
+---@class NeopmConfig
+---@field install_dir? string   Path to installation directory
+---@field patch_dir? string     Path to directory with patches
+---@field git_command? string   Git command
+
 ---@class NeopmStats
 ---@field total number        Total plugin count
 ---@field external number     External plugin count
@@ -65,13 +70,13 @@ local state = {
   ---@type NeopmPlug[]?
   by_dir = {},
 
-  --- Option: Path to installation directory, updated by prepare()
+  --- Option: Path to installation directory
   ---@type string
   install_dir = DEFAULT_OPTIONS.install_dir,
-  --- Option: Path to directory with patches, updated by prepare()
+  --- Option: Path to directory with patches
   ---@type string
   patch_dir = DEFAULT_OPTIONS.patch_dir,
-  --- Option: Git command, updated by prepare()
+  --- Option: Git command
   ---@type string
   git_command = DEFAULT_OPTIONS.git_command,
 }
@@ -93,16 +98,6 @@ local HOME = vim.env.HOME
 
 ---@type Neopm
 local Neopm = {
-  --- Path to installation directory
-  ---@type string
-  install_dir = DEFAULT_OPTIONS.install_dir,
-  --- Path to directory with patches
-  ---@type string
-  patch_dir = DEFAULT_OPTIONS.patch_dir,
-  --- Git command
-  ---@type string
-  git_command = DEFAULT_OPTIONS.git_command,
-
   --- Internal state
   ---@type NeopmState
   _state = state,
@@ -139,6 +134,7 @@ local function validate_st(v)
   if type(v) == 'string' then
     return { v }
   elseif type(v) == 'table' then
+    -- TODO: make a copy
     for _, item in ipairs(v) do
       if type(item) ~= 'string' then
         return nil, 'expected string or array of strings'
@@ -267,23 +263,6 @@ end
 
 --- Update internal state
 local function prepare()
-  -- update options
-  for k, default in pairs(DEFAULT_OPTIONS) do
-    local v = Neopm[k]
-    if v == nil then
-      state[k] = default
-    elseif type(v) == 'string' then
-      if v:sub(1,2) == '~/' or v == '~' then
-        state[k] = assert(HOME)..v:sub(2)
-      else
-        state[k] = v
-      end
-    else
-      error('Expected string in option: '..k, 3)
-    end
-  end
-
-  -- update plugin states
   if not changed then return end
   changed = false
   state.by_dir = {}
@@ -741,6 +720,40 @@ function Neopm.autoinstall(prompt)
   end
 
   Neopm.install()
+end
+
+--- Set configuration
+---@param config NeopmConfig
+function Neopm.config(config)
+  if type(config) ~= 'table' then
+    error('Expected table', 2)
+  end
+
+  -- make a shallow copy
+  local c = {}
+  for k, v in pairs(config) do
+    c[k] = v
+  end
+
+  for k, default in pairs(DEFAULT_OPTIONS) do
+    -- pop value
+    local v = c[k]
+    c[k] = nil
+
+    if v == nil then
+      state[k] = default -- reset option back to default if not in config
+    elseif type(v) ~= 'string' then
+      error('Expected string in option: '..k, 2)
+    elseif v:sub(1,2) == '~/' or v == '~' then
+      state[k] = assert(HOME)..v:sub(2) -- expand "~/" to $HOME
+    else
+      state[k] = v
+    end
+  end
+
+  for k in pairs(c) do
+    error('Invalid option: '..tostring(k), 2)
+  end
 end
 
 
