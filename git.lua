@@ -85,9 +85,11 @@ end
 ---@param on_progress fun(data: string)
 ---@return number status
 function Git.clone(plug, on_progress)
+  local uri = plug.uri:find(':') and plug.uri or
+    string.format('https://git::@github.com/%s.git', plug.uri)
   local args = {
     'clone',
-    string.format('https://git::@github.com/%s.git', plug.uri),
+    uri,
     plug.path,
     '--origin', 'origin',
     '--depth', '1',
