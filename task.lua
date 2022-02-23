@@ -18,6 +18,9 @@ local active = 0
 --- Running jobs (uv_process_t)
 ---@type userdata[]
 local jobs = {}
+--- Open pipes (uv_pipe_t)
+---@type table<userdata,boolean>
+local pipes = {}
 --- Cancelled flag
 local cancelled = false
 
@@ -113,13 +116,23 @@ function Task.done()
   return active == 0 or cancelled
 end
 
---- Cancels all tasks (and spawned jobs)
+--- Cancels all tasks
 function Task.cancel()
   cancelled = true
+
   for _, job in ipairs(jobs) do
-    job:kill('SIGTERM')
+    if not job:is_closing() then
+      job:kill('SIGTERM')
+    end
   end
   jobs = {}
+
+  for pipe in pairs(pipes) do
+    if not pipe:is_closing() then
+      pipe:close()
+    end
+  end
+  pipes = {}
 end
 
 --- Waits until all tasks are done
@@ -163,11 +176,11 @@ end
 ---@return fun(err?: string, data: string)|nil callback
 ---@return string[] output
 local function new_pipe(cb, capture)
-  if not cb and not capture then
-    return uv.new_pipe()
-  end
-
   local pipe = uv.new_pipe()
+  pipes[pipe] = true
+  if not cb and not capture then
+    return pipe
+  end
   local callback, output
 
   if capture and cb then
@@ -236,9 +249,11 @@ function Task:exec(path, args, opts)
     handle:close()
     if stdout_pipe then
       stdout_pipe:close()
+      pipes[stdout_pipe] = nil
     end
     if stderr_pipe then
       stderr_pipe:close()
+      pipes[stderr_pipe] = nil
     end
 
     -- remove from active jobs
@@ -268,9 +283,11 @@ function Task:exec(path, args, opts)
   if not handle then
     if stdout_pipe then
       stdout_pipe:close()
+      pipes[stdout_pipe] = nil
     end
     if stderr_pipe then
       stderr_pipe:close()
+      pipes[stderr_pipe] = nil
     end
     error('failed to spawn process: '..path..' '..tconcat(args, ' '))
   end
