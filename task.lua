@@ -1,7 +1,7 @@
 local uv = vim.loop
 local ccreate, cresume, cyield, crunning =
   coroutine.create, coroutine.resume, coroutine.yield, coroutine.running
-local tinsert, tremove, tconcat = table.insert, table.remove, table.concat
+local tinsert, tconcat = table.insert, table.concat
 
 
 local CHUNK_SIZE = 1024 -- bytes per chunk when reading a file
@@ -16,7 +16,7 @@ local tasks = {}
 --- Active tasks
 local active = 0
 --- Running jobs (uv_process_t)
----@type userdata[]
+---@type table<userdata[],boolean>
 local jobs = {}
 --- Open pipes (uv_pipe_t)
 ---@type table<userdata,boolean>
@@ -92,6 +92,7 @@ function Task.reset()
   tasks = {}
   active = 0
   jobs = {}
+  pipes = {}
   cancelled = false
 end
 
@@ -120,7 +121,7 @@ end
 function Task.cancel()
   cancelled = true
 
-  for _, job in ipairs(jobs) do
+  for job in pairs(jobs) do
     if not job:is_closing() then
       job:kill('SIGTERM')
     end
@@ -257,12 +258,7 @@ function Task:exec(path, args, opts)
     end
 
     -- remove from active jobs
-    for i, v in ipairs(jobs) do
-      if handle == v then
-        tremove(jobs, i)
-        break
-      end
-    end
+    jobs[handle] = nil
 
     -- split output to lines
     if stdout_output then
@@ -300,7 +296,7 @@ function Task:exec(path, args, opts)
     stderr_pipe:read_start(stderr_cb)
   end
 
-  tinsert(jobs, handle)
+  jobs[handle] = true
   return Task.yield()
 end
 
