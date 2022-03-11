@@ -6,7 +6,7 @@ local UPDATE_INTERVAL = 50 -- minimum time in ms to flush changes
 local COLUMN_WIDTH    = 50 -- plugin uri column width
 
 ---@type NeopmState
-local state = require('plug')._state
+local state = require('neopm')._state
 
 ---@class NeopmUpdateView
 ---@field bufnr number
@@ -28,12 +28,12 @@ function UpdateView.new()
   api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
   -- TODO: reuse previous buffer
-  local ok, err = pcall(api.nvim_buf_set_name, bufnr, '[plug]')
+  local ok, err = pcall(api.nvim_buf_set_name, bufnr, '[neopm]')
   if not ok then
     if err:match('^Vim:E95:') then
       local created = false
       for i = 2, 99 do -- to not go forever if something goes wrong I guess
-        ok, err = pcall(api.nvim_buf_set_name, bufnr, '[plug('..i..')]')
+        ok, err = pcall(api.nvim_buf_set_name, bufnr, '[neopm('..i..')]')
         if ok then
           created = true
           break

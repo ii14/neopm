@@ -1,10 +1,10 @@
 local fn = vim.fn
 local uv = vim.loop
 local tinsert = table.insert
-local Task = require('plug.task')
+local Task = require('neopm.task')
 
 ---@type NeopmState
-local state = require('plug')._state
+local state = require('neopm')._state
 
 local Git = {}
 

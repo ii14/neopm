@@ -622,7 +622,7 @@ function Neopm.load()
     vcmd(fmt([[
       augroup plug_lazy
         autocmd FileType %s ++once
-          \ lua require('plug')._load_ft(vim.fn.expand('<amatch>'))
+          \ lua require('neopm')._load_ft(vim.fn.expand('<amatch>'))
       augroup end
     ]], tconcat(fts, ',')))
   end
@@ -630,7 +630,7 @@ function Neopm.load()
   for _, cmd in ipairs(cmds) do
     vcmd(fmt([[
       command! -nargs=* -range -bang -complete=file %s
-        \ lua require('plug')._load_cmd('%s', "<bang>", <range>, <line1>, <line2>, <q-args>)
+        \ lua require('neopm')._load_cmd('%s', "<bang>", <range>, <line1>, <line2>, <q-args>)
     ]], cmd, cmd))
   end
 
@@ -651,13 +651,13 @@ end
 --- Install plugins
 function Neopm.install()
   prepare()
-  return require('plug.impl').install()
+  return require('neopm.impl').install()
 end
 
 --- Update plugins
 function Neopm.update()
   prepare()
-  return require('plug.impl').update()
+  return require('neopm.impl').update()
 end
 
 
