@@ -130,7 +130,7 @@ Plug.load()
 
 ### Install and update plugins
 
-Assuming you created a global variable (if not, replace `Plug` with `require'plug'`):
+Assuming you created a global variable (if not, replace `Plug` with `require'neopm'`):
 
 ```
 :lua Plug.install()
