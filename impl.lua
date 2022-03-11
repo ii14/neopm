@@ -171,11 +171,21 @@ local function start(update)
 
   -- wait for tasks
   -- TODO: configurable timeout
-  -- TODO: user interrupt
+  local interrupt = false
   vim.wait(60000, function()
+    if not pcall(fn.getchar, 0) then
+      interrupt = true
+      return true
+    end
     buf:flush()
     return Task.done()
   end)
+
+  if interrupt then
+    Task.cancel()
+    vim.api.nvim_echo({{'Neopm: Keyboard interrupt', 'ErrorMsg'}}, true, {})
+    return false
+  end
 
   buf:global('Generating help tags...')
   Impl.helptags()

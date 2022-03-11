@@ -38,6 +38,14 @@ local function discard_first(_, ...)
   return ...
 end
 
+--- Close uv handle
+---@param handle userdata
+local function close(handle)
+  if not handle:is_closing() then
+    pcall(uv.close, handle)
+  end
+end
+
 
 -- TASK API --
 
@@ -129,9 +137,7 @@ function Task.cancel()
   jobs = {}
 
   for pipe in pairs(pipes) do
-    if not pipe:is_closing() then
-      pipe:close()
-    end
+    close(pipe)
   end
   pipes = {}
 end
@@ -247,13 +253,13 @@ function Task:exec(path, args, opts)
     env = opts.env,
     stdio = { nil, stdout_pipe, stderr_pipe },
   }, function(status, signal)
-    handle:close()
+    close(handle)
     if stdout_pipe then
-      stdout_pipe:close()
+      close(stdout_pipe)
       pipes[stdout_pipe] = nil
     end
     if stderr_pipe then
-      stderr_pipe:close()
+      close(stderr_pipe)
       pipes[stderr_pipe] = nil
     end
 
@@ -278,11 +284,11 @@ function Task:exec(path, args, opts)
 
   if not handle then
     if stdout_pipe then
-      stdout_pipe:close()
+      close(stdout_pipe)
       pipes[stdout_pipe] = nil
     end
     if stderr_pipe then
-      stderr_pipe:close()
+      close(stderr_pipe)
       pipes[stderr_pipe] = nil
     end
     error('failed to spawn process: '..path..' '..tconcat(args, ' '))
