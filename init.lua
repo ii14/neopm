@@ -81,6 +81,9 @@ local state = {
   git_command = DEFAULT_OPTIONS.git_command,
 }
 
+-- inject neopm.state module
+package.loaded['neopm.state'] = state
+
 --- Plugins loaded on filetype
 ---@type table<string,NeopmPlug[]>
 local lazy_fts = {}
@@ -647,14 +650,12 @@ end
 --- Install plugins
 function Neopm.install()
   prepare()
-  package.loaded['neopm.state'] = state
   return require('neopm.impl').install()
 end
 
 --- Update plugins
 function Neopm.update()
   prepare()
-  package.loaded['neopm.state'] = state
   return require('neopm.impl').update()
 end
 
