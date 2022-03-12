@@ -6,7 +6,7 @@ local UPDATE_INTERVAL = 50 -- minimum time in ms to flush changes
 local COLUMN_WIDTH    = 50 -- plugin uri column width
 
 ---@type NeopmState
-local state = require('neopm')._state
+local state = require('neopm.state')
 
 ---@class NeopmUpdateView
 ---@field bufnr number

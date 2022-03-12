@@ -97,11 +97,7 @@ local changed = false
 local HOME = vim.env.HOME
 
 ---@type Neopm
-local Neopm = {
-  --- Internal state
-  ---@type NeopmState
-  _state = state,
-}
+local Neopm = {}
 
 
 --- Find value in a table
@@ -651,12 +647,14 @@ end
 --- Install plugins
 function Neopm.install()
   prepare()
+  package.loaded['neopm.state'] = state
   return require('neopm.impl').install()
 end
 
 --- Update plugins
 function Neopm.update()
   prepare()
+  package.loaded['neopm.state'] = state
   return require('neopm.impl').update()
 end
 

@@ -6,7 +6,7 @@ local Git = require('neopm.git')
 local UpdateView = require('neopm.updateview')
 
 ---@type NeopmState
-local state = require('neopm')._state
+local state = require('neopm.state')
 
 local Impl = {}
 

@@ -4,7 +4,7 @@ local tinsert = table.insert
 local Task = require('neopm.task')
 
 ---@type NeopmState
-local state = require('neopm')._state
+local state = require('neopm.state')
 
 local Git = {}
 
