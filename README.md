@@ -38,7 +38,7 @@ Plugin manager for neovim, pre-alpha stage.
 
 ```
 mkdir -p ~/.config/nvim/lua
-git clone https://github.com/ii14/neopm.nvim ~/.config/nvim/lua/neopm
+git clone https://github.com/ii14/neopm ~/.config/nvim/lua/neopm
 ```
 
 ## Managing plugins
