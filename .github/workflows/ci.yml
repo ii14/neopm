@@ -1,0 +1,20 @@
+name: 'test'
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 15
+    steps:
+      - uses: 'actions/checkout@v2'
+      - uses: 'notomo/action-setup-nvim-lua@v1'
+        with:
+          luarocks-version: '3.5.0'
+      - uses: 'rhysd/action-setup-vim@v1'
+        with:
+          neovim: true
+      - run: luarocks install vusted
+      - run: make test

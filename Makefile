@@ -1,15 +1,7 @@
-LUA_VERSION = 5.1
-LUAROCKS = luarocks --lua-version=$(LUA_VERSION) --tree=.deps
+# hack to make "require" work for the root directory
+PARENT = $(shell readlink -f ..)
+LUA_PATH = $(shell lua -e 'print(package.path)');$(PARENT)/?.lua;$(PARENT)/?/init.lua
 
-test: .deps/bin/vusted
-	@./.deps/bin/vusted
-
-deps: .deps/bin/vusted
-
-.deps/bin/vusted:
-	$(LUAROCKS) install vusted
-
-clean:
-	$(RM) -rf .deps
-
-.PHONY: test deps clean
+.PHONY: test
+test:
+	@vusted
