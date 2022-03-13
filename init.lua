@@ -1,7 +1,4 @@
-local fn = vim.fn
-local api = vim.api
-local uv = vim.loop
-local vcmd = vim.cmd
+local fn, api, uv, vcmd = vim.fn, vim.api, vim.loop, vim.cmd
 local fmt = string.format
 local tinsert, tremove, tconcat, tsort =
   table.insert, table.remove, table.concat, table.sort
@@ -50,6 +47,11 @@ local tinsert, tremove, tconcat, tsort =
 -- TODO: option to manually load lazy plugins
 
 
+local HOME = assert(vim.env.HOME, 'HOME environment variable is not set')
+
+---@type Neopm
+local Neopm = {}
+
 --- Default options
 local DEFAULT_OPTIONS = {
   install_dir = fn.stdpath('data')..'/neopm',
@@ -57,9 +59,13 @@ local DEFAULT_OPTIONS = {
   git_command = 'git',
 }
 
---- Global state
+--- Internal state
 ---@class NeopmState
 local state = {
+  --- Changed state flag, for state.prepare()
+  ---@type boolean
+  _changed = false,
+
   --- Plugin lookup by definition order
   ---@type NeopmPlug[]
   by_order = {},
@@ -67,7 +73,7 @@ local state = {
   ---@type NeopmPlug[]
   by_uri = {},
   --- Plugin lookup by "as" property, updated by prepare()
-  ---@type NeopmPlug[]?
+  ---@type NeopmPlug[]
   by_dir = {},
 
   --- Option: Path to installation directory
@@ -79,28 +85,55 @@ local state = {
   --- Option: Git command
   ---@type string
   git_command = DEFAULT_OPTIONS.git_command,
+
+  --- Plugins loaded on filetype
+  ---@type table<string,NeopmPlug[]>
+  lazy_ft = {},
+  --- Plugins loaded on command
+  ---@type table<string,NeopmPlug[]>
+  lazy_cmd = {},
+  --- Plugins loaded on key mapping
+  ---@type table<string,NeopmPlug[]>
+  -- lazy_map = {},
 }
+
+--- Update internal state
+function state.prepare()
+  if not state._changed then return end
+  state._changed = false
+
+  state.by_dir = {}
+  for i, plug in ipairs(state.by_order) do
+    plug.order = i
+    local as = plug.as
+    if as then
+      -- check for name conflicts after everything was declared
+      if state.by_dir[as] then
+        error('Conflicting plugin name: '..as, 3)
+      end
+      plug.path = state.install_dir..'/'..as
+      state.by_dir[as] = plug
+    elseif plug.ext then
+      local uri = plug.uri
+      if uri:sub(1,2) == '~/' or uri == '~' then
+        plug.path = HOME..uri:sub(2)
+      else
+        plug.path = uri
+      end
+    end
+  end
+end
+
+--- Clear internal state (for tests only)
+function state.clear()
+  state._changed = false
+  state.by_order = {}
+  state.by_uri = {}
+  state.by_dir = {}
+end
 
 -- inject neopm.state module
 package.loaded['neopm.state'] = state
-
---- Plugins loaded on filetype
----@type table<string,NeopmPlug[]>
-local lazy_fts = {}
---- Plugins loaded on command
----@type table<string,NeopmPlug[]>
-local lazy_cmds = {}
---- Plugins loaded on key mapping
----@type table<string,NeopmPlug[]>
--- local lazy_maps = {}
-
---- Changed state flag, for prepare()
-local changed = false
-
-local HOME = vim.env.HOME
-
----@type Neopm
-local Neopm = {}
 
 
 --- Find value in a table
@@ -201,7 +234,7 @@ local function newplugin(uri, idx)
     end
   end
 
-  changed = true
+  state._changed = true
   plug = { uri = uri, as = as, ext = ext }
   state.by_uri[uri] = plug
   if idx then
@@ -216,7 +249,11 @@ end
 ---@param plug NeopmPlug     Plugin instance
 ---@param opts NeopmPlugOpts Options table
 local function setopts(plug, opts)
-  changed = true
+  if type(opts) ~= 'table' then
+    error('Invalid plugin options, expected table', 3)
+  end
+
+  state._changed = true
   for k, v in pairs(opts) do
     local validate = VALIDATE_OPTS[k]
     if not validate then
@@ -259,31 +296,6 @@ local function addplugin(_, uri)
   end
 end
 
-
---- Update internal state
-local function prepare()
-  if not changed then return end
-  changed = false
-  state.by_dir = {}
-  for i, plug in ipairs(state.by_order) do
-    plug.order = i
-    local as = plug.as
-    if as then
-      plug.path = state.install_dir..'/'..as
-      if state.by_dir[as] then
-        error('Conflicting plugin name: '..as, 3)
-      end
-      state.by_dir[as] = plug
-    elseif plug.ext then
-      local uri = plug.uri
-      if uri:sub(1,2) == '~/' or uri == '~' then
-        plug.path = assert(HOME)..uri:sub(2)
-      else
-        plug.path = uri
-      end
-    end
-  end
-end
 
 --- Update runtimepath
 ---@return NeopmPlug[] setup_plugs
@@ -396,9 +408,9 @@ end
 ---@param ft string
 function Neopm._load_ft(ft)
   -- get lazy plugins for this filetype
-  local plugs = lazy_fts[ft]
+  local plugs = state.lazy_ft[ft]
   if not plugs then return end
-  lazy_fts[ft] = nil
+  state.lazy_ft[ft] = nil
 
   -- remove plugins that were already loaded
   for i = #plugs, 1, -1 do
@@ -487,9 +499,9 @@ end
 ---@param args string
 function Neopm._load_cmd(cmd, bang, range, line1, line2, args)
   -- get lazy plugins for this command
-  local plugs = lazy_cmds[cmd]
+  local plugs = state.lazy_cmd[cmd]
   if not plugs then return end
-  lazy_cmds[cmd] = nil
+  state.lazy_cmd[cmd] = nil
 
   -- remove plugins that were already loaded
   for i = #plugs, 1, -1 do
@@ -557,13 +569,13 @@ end
 
 --- Load plugins
 function Neopm.load()
-  prepare()
+  state.prepare()
 
   vcmd([[
-    augroup plug_lazy
+    augroup neopm_lazy
       autocmd!
     augroup end
-    silent! augroup! plug_lazy
+    silent! augroup! neopm_lazy
   ]])
 
   local fts = {}
@@ -585,12 +597,12 @@ function Neopm.load()
 
       for _, ft in ipairs(plug.ft) do
         tinsert(fts, ft)
-        local lazy = lazy_fts[ft]
+        local lazy = state.lazy_ft[ft]
         if lazy then
           tinsert(lazy, plug)
         else
           lazy = { plug }
-          lazy_fts[ft] = lazy
+          state.lazy_ft[ft] = lazy
         end
       end
     end
@@ -601,12 +613,12 @@ function Neopm.load()
         local cmd = on:match('^([A-Z].*)!*$')
         if cmd then
           tinsert(cmds, cmd)
-          local lazy = lazy_cmds[cmd]
+          local lazy = state.lazy_cmd[cmd]
           if lazy then
             tinsert(lazy, plug)
           else
             lazy = { plug }
-            lazy_cmds[cmd] = lazy
+            state.lazy_cmd[cmd] = lazy
           end
         else
           error('Invalid on option in '..plug.uri, 2)
@@ -619,7 +631,7 @@ function Neopm.load()
 
   if #fts > 0 then
     vcmd(fmt([[
-      augroup plug_lazy
+      augroup neopm_lazy
         autocmd FileType %s ++once
           \ lua require('neopm')._load_ft(vim.fn.expand('<amatch>'))
       augroup end
@@ -649,13 +661,13 @@ end
 
 --- Install plugins
 function Neopm.install()
-  prepare()
+  state.prepare()
   return require('neopm.impl').install()
 end
 
 --- Update plugins
 function Neopm.update()
-  prepare()
+  state.prepare()
   return require('neopm.impl').update()
 end
 
@@ -663,7 +675,7 @@ end
 --- Get plugin statistics
 ---@return NeopmStats
 function Neopm.stats()
-  prepare()
+  state.prepare()
   local total     = 0
   local managed   = 0
   local external  = 0
@@ -744,7 +756,7 @@ function Neopm.config(config)
     elseif type(v) ~= 'string' then
       error('Expected string in option: '..k, 2)
     elseif v:sub(1,2) == '~/' or v == '~' then
-      state[k] = assert(HOME)..v:sub(2) -- expand "~/" to $HOME
+      state[k] = HOME..v:sub(2) -- expand "~/" to $HOME
     else
       state[k] = v
     end
@@ -756,5 +768,4 @@ function Neopm.config(config)
 end
 
 
-setmetatable(Neopm, { __call = addplugin })
-return Neopm
+return setmetatable(Neopm, { __call = addplugin })
