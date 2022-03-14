@@ -104,6 +104,36 @@ describe('neopm', function()
     end
   end)
 
+  it('should correctly process SSH URI', function()
+    Plug 'git@github.com:ii14/neopm.git'
+    Plug.load()
+
+    eq(#state.by_order, 1)
+    local p = truthy(state.by_uri['git@github.com:ii14/neopm.git'])
+    eq(p.uri, 'git@github.com:ii14/neopm.git')
+    eq(p.as, 'neopm.git')
+    eq(p.path, INSTALL_DIR..'/neopm.git')
+    eq(p.order, 1)
+    eq(p, state.by_dir['neopm.git'])
+    eq(p, state.by_order[1])
+    truthy(get_rtp()[INSTALL_DIR..'/neopm.git'])
+  end)
+
+  it('should correctly process HTTPS URI', function()
+    Plug 'https://github.com/ii14/neopm.git'
+    Plug.load()
+
+    eq(#state.by_order, 1)
+    local p = truthy(state.by_uri['https://github.com/ii14/neopm.git'])
+    eq(p.uri, 'https://github.com/ii14/neopm.git')
+    eq(p.as, 'neopm.git')
+    eq(p.path, INSTALL_DIR..'/neopm.git')
+    eq(p.order, 1)
+    eq(p, state.by_dir['neopm.git'])
+    eq(p, state.by_order[1])
+    truthy(get_rtp()[INSTALL_DIR..'/neopm.git'])
+  end)
+
   it('should refer to the same plugin when the URI is the same', function()
     Plug 'abc/def'
     Plug 'abc/def'
