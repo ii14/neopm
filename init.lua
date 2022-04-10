@@ -4,8 +4,6 @@ local tinsert, tremove, tconcat, tsort =
   table.insert, table.remove, table.concat, table.sort
 
 
----@alias Neopm fun(uri: string): fun(opts: NeopmPlugOpts)
-
 ---@class NeopmPlug
 ---@field uri string              Plugin URI
 ---@field path? string            Full path to plugin (updated by prepare())
@@ -766,6 +764,16 @@ function Neopm.config(config)
     error('Invalid option: '..tostring(k), 2)
   end
 end
+
+
+vim.cmd([[
+  function! s:complete(ArgLead, CmdLine, CursorPos)
+    return luaeval('require"neopm.command".complete(_A[1], _A[2], _A[3])',
+      \ [a:ArgLead, a:CmdLine, a:CursorPos])
+  endfunction
+  command! -nargs=+ -complete=customlist,s:complete Neopm
+    \ call luaeval('require"neopm.command".run(_A)', <q-args>)
+]])
 
 
 return setmetatable(Neopm, { __call = addplugin })

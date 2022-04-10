@@ -130,14 +130,10 @@ Plug.load()
 
 ### Install and update plugins
 
-Assuming you created a global variable (if not, replace `Plug` with `require'neopm'`):
-
 ```
-:lua Plug.install()
-:lua Plug.update()
+:Neopm install
+:Neopm update
 ```
-
-In future vim commands will be provided.
 
 ### Patching plugins
 
