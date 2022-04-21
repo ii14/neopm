@@ -307,16 +307,16 @@ local function update_rtp()
     if not plug.lazy or plug.loaded then
       -- save plugins that were just loaded and need to run setup option
       if plug.setup and not plug.loaded then
-        tinsert(setup_plugs, plug)
+        setup_plugs[#setup_plugs+1] = plug
       end
 
       plug.loaded = true
-      tinsert(paths, plug.path)
+      paths[#paths+1] = plug.path
 
       local afterdir = plug.path..'/after'
       local stat = vim.loop.fs_stat(afterdir)
       if stat and stat.type == 'directory' then
-        tinsert(after, afterdir)
+        after[#after+1] = afterdir
       end
     end
   end
@@ -333,28 +333,28 @@ local function update_rtp()
 
     -- TODO: escape with gsub('[ ,]', '\\%1')
     if fst then
-      tinsert(final, fst)
+      final[#final+1] = fst
     end
     for _, path in ipairs(paths) do
       if not seen[path] then
         seen[path] = true
-        tinsert(final, path)
+        final[#final+1] = path
       end
     end
     for _, path in ipairs(rtp) do
       if not seen[path] then
         seen[path] = true
-        tinsert(final, path)
+        final[#final+1] = path
       end
     end
     for _, path in ipairs(after) do
       if not seen[path] then
         seen[path] = true
-        tinsert(final, path)
+        final[#final+1] = path
       end
     end
     if lst then
-      tinsert(final, lst)
+      final[#final+1] = lst
     end
 
     final = tconcat(final, ',')
@@ -382,7 +382,7 @@ local find_scripts do
         if ent.type == 'file' then
           local ext = ent.name:sub(-4)
           if ext == '.vim' or ext == '.lua' then
-            tinsert(files, path..'/'..ent.name)
+            files[#files+1] = path..'/'..ent.name
           end
         elseif ent.type == 'directory' then
           if depth < 3 then
@@ -455,11 +455,11 @@ function Neopm._load_ft(ft)
   for _, plug in ipairs(plugs) do
     local fvim = plug.path..'/after/syntax/'..ft..'.vim'
     if filereadable(fvim) then
-      tinsert(after, fvim)
+      after[#after+1] = fvim
     end
     local flua = plug.path..'/after/syntax/'..ft..'.lua'
     if filereadable(flua) then
-      tinsert(after, flua)
+      after[#after+1] = flua
     end
   end
   if #after > 0 then
@@ -481,7 +481,7 @@ function Neopm._load_ft(ft)
   for _, plug in ipairs(setup_plugs) do
     local setup = plug.setup
     if type(setup) == 'string' then
-      vim.cmd(setup)
+      vcmd(setup)
     elseif type(setup) == 'function' then
       setup()
     end
@@ -548,7 +548,7 @@ function Neopm._load_cmd(cmd, bang, range, line1, line2, args)
   for _, plug in ipairs(setup_plugs) do
     local setup = plug.setup
     if type(setup) == 'string' then
-      vim.cmd(setup)
+      vcmd(setup)
     elseif type(setup) == 'function' then
       setup()
     end
@@ -573,7 +573,6 @@ function Neopm.load()
     augroup neopm_lazy
       autocmd!
     augroup end
-    silent! augroup! neopm_lazy
   ]])
 
   local fts = {}
@@ -594,13 +593,12 @@ function Neopm.load()
       vcmd('augroup end')
 
       for _, ft in ipairs(plug.ft) do
-        tinsert(fts, ft)
+        fts[#fts+1] = ft
         local lazy = state.lazy_ft[ft]
         if lazy then
-          tinsert(lazy, plug)
+          lazy[#lazy+1] = plug
         else
-          lazy = { plug }
-          state.lazy_ft[ft] = lazy
+          state.lazy_ft[ft] = { plug }
         end
       end
     end
@@ -610,13 +608,12 @@ function Neopm.load()
       for _, on in ipairs(plug.on) do
         local cmd = on:match('^([A-Z].*)!*$')
         if cmd then
-          tinsert(cmds, cmd)
+          cmds[#cmds+1] = cmd
           local lazy = state.lazy_cmd[cmd]
           if lazy then
-            tinsert(lazy, plug)
+            lazy[#lazy+1] = plug
           else
-            lazy = { plug }
-            state.lazy_cmd[cmd] = lazy
+            state.lazy_cmd[cmd] = { plug }
           end
         else
           error('Invalid on option in '..plug.uri, 2)
@@ -649,7 +646,7 @@ function Neopm.load()
   for _, plug in ipairs(setup_plugs) do
     local setup = plug.setup
     if type(setup) == 'string' then
-      vim.cmd(setup)
+      vcmd(setup)
     elseif type(setup) == 'function' then
       setup()
     end
@@ -766,7 +763,7 @@ function Neopm.config(config)
 end
 
 
-vim.cmd([[
+vcmd([[
   function! s:complete(ArgLead, CmdLine, CursorPos)
     return luaeval('require"neopm.command".complete(_A[1], _A[2], _A[3])',
       \ [a:ArgLead, a:CmdLine, a:CursorPos])
