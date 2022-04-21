@@ -8,6 +8,9 @@ local COLUMN_WIDTH    = 50 -- plugin uri column width
 ---@type NeopmState
 local state = require('neopm.state')
 
+---@type number
+local bufnr
+
 ---@class NeopmUpdateView
 ---@field bufnr number
 ---@field lines string[]
@@ -19,35 +22,40 @@ UpdateView.__index = UpdateView
 --- Create a new update view
 ---@return NeopmUpdateView
 function UpdateView.new()
-  vim.cmd([[
-    enew
-    setl buftype=nofile
-    setl nowrap
-  ]])
-  local bufnr = api.nvim_get_current_buf()
-  api.nvim_buf_set_option(bufnr, 'modifiable', false)
+  if bufnr and api.nvim_buf_is_loaded(bufnr) then
+    api.nvim_set_current_buf(bufnr)
+  else
+    vim.cmd([[
+      enew
+      setl buftype=nofile
+      setl nowrap
+    ]])
+    bufnr = api.nvim_get_current_buf()
 
-  -- TODO: reuse previous buffer
-  local ok, err = pcall(api.nvim_buf_set_name, bufnr, '[neopm]')
-  if not ok then
-    if err:match('^Vim:E95:') then
-      local created = false
-      for i = 2, 99 do -- to not go forever if something goes wrong I guess
-        ok, err = pcall(api.nvim_buf_set_name, bufnr, '[neopm('..i..')]')
-        if ok then
-          created = true
-          break
-        elseif not err:match('^Vim:E95:') then
-          error(err)
+    -- TODO: reuse previous buffer
+    local ok, err = pcall(api.nvim_buf_set_name, bufnr, 'neopm://update')
+    if not ok then
+      if err:match('^Vim:E95:') then
+        local created = false
+        for i = 2, 999 do -- to not go forever if something goes wrong I guess
+          ok, err = pcall(api.nvim_buf_set_name, bufnr, 'neopm://update('..i..')')
+          if ok then
+            created = true
+            break
+          elseif not err:match('^Vim:E95:') then
+            error(err)
+          end
         end
+        if not created then
+          error('failed to create a new buffer')
+        end
+      else
+        error(err)
       end
-      if not created then
-        error('failed to create a new buffer')
-      end
-    else
-      error(err)
     end
   end
+
+  api.nvim_buf_set_option(bufnr, 'modifiable', false)
 
   local lines = {}
   -- populate buffer with plugin uris
