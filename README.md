@@ -1,22 +1,24 @@
 # neopm
 
-Plugin manager for neovim, pre-alpha stage.
+Plugin manager for neovim, pre-alpha stage. **Expect breaking changes.**
 
 ## TODO
 
 - [X] Install plugins
 - [X] Update plugins
 - [X] Automatic plugin patching
-- [ ] Error reporting
-- [ ] Show git log
-- [ ] Show git reflog and restore updates
-- [ ] Fetch and review pending updates
-- [ ] Show diffs
-- [ ] Manage patches
-- [ ] Lockfile
-- [ ] Overview
-- [ ] Commands
+- [ ] Documentation
+- [ ] Tests
+- [X] Commands
 - [X] Generate help tags
+- [ ] User interface
+  - [ ] Error reporting
+  - [ ] Fetch and review pending updates
+  - [ ] Show git log
+  - [ ] Show git reflog and restore updates
+  - [ ] Show diffs
+  - [ ] Manage patches
+  - [ ] Overview
 - [ ] Plugin options
   - [X] Plugin dependencies
   - [X] Post load hook
@@ -33,6 +35,8 @@ Plugin manager for neovim, pre-alpha stage.
     - [ ] branch
     - [ ] tag
     - [ ] commit
+- [ ] Lockfile
+- [ ] Optional `runtimepath` optimization
 
 ## Install
 
