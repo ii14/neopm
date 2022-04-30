@@ -583,14 +583,16 @@ function Neopm.load()
   for _, plug in ipairs(state.by_order) do
     if plug.ft then
       plug.lazy = true
-      vcmd('augroup filetypedetect')
+
+      local cmd = {'augroup filetypedetect'}
       for _, name in ipairs(find_scripts(plug.path..'/ftdetect')) do
-        vcmd('source '..name:gsub(' ', '\\ '))
+        cmd[#cmd+1] = 'source '..name:gsub(' ', '\\ ')
       end
       for _, name in ipairs(find_scripts(plug.path..'/after/ftdetect')) do
-        vcmd('source '..name:gsub(' ', '\\ '))
+        cmd[#cmd+1] = 'source '..name:gsub(' ', '\\ ')
       end
-      vcmd('augroup end')
+      cmd[#cmd+1] = 'augroup end'
+      vcmd(tconcat(cmd, '\n'))
 
       for _, ft in ipairs(plug.ft) do
         fts[#fts+1] = ft
