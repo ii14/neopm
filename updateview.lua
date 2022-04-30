@@ -32,7 +32,6 @@ function UpdateView.new()
     ]])
     bufnr = api.nvim_get_current_buf()
 
-    -- TODO: reuse previous buffer
     local ok, err = pcall(api.nvim_buf_set_name, bufnr, 'neopm://update')
     if not ok then
       if err:match('^Vim:E95:') then
